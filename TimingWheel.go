@@ -42,16 +42,16 @@ func (wheel *TimingWheel) addOverflowWheel() {
 	}
 }
 
-func (wheel *TimingWheel) add(timerTaskEntry *TimerTaskEntry) bool {
-	expiration := timerTaskEntry.expirationMs
-	if timerTaskEntry.cancelled() {
+func (wheel *TimingWheel) add(entry *TimerTaskEntry) bool {
+	expiration := entry.expirationMs
+	if entry.cancelled() {
 		return false
 	} else if expiration < wheel.currentTime+wheel.tickMs { // slow than current time
 		return false
 	} else if expiration < wheel.currentTime+wheel.interval { // in this wheel
 		virtualId := expiration / wheel.tickMs
 		bucket := wheel.buckets[int(virtualId%wheel.wheelSize)]
-		bucket.add(timerTaskEntry)
+		bucket.add(entry)
 
 		if bucket.setExpiration(virtualId * wheel.tickMs) {
 			wheel.queue.Push(bucket)
@@ -61,7 +61,7 @@ func (wheel *TimingWheel) add(timerTaskEntry *TimerTaskEntry) bool {
 		if wheel.overflowWheel == nil {
 			wheel.addOverflowWheel()
 		}
-		return wheel.overflowWheel.add(timerTaskEntry)
+		return wheel.overflowWheel.add(entry)
 	}
 }
 

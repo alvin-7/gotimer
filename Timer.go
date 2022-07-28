@@ -21,10 +21,10 @@ type SystemTimer struct {
 	group       *sync.WaitGroup
 }
 
-func (t *SystemTimer) add(timerTask *TimerTask) {
-	t.locker.RLock()
-	defer t.locker.RUnlock()
-	t.addTimerTaskEntry(NewTimerTaskEntry(timerTask, timerTask.delayMs+time.Now().UnixMilli()))
+func (this *SystemTimer) add(timerTask *TimerTask) {
+	this.locker.RLock()
+	defer this.locker.RUnlock()
+	this.addTimerTaskEntry(NewTimerTaskEntry(timerTask, timerTask.delayMs+time.Now().UnixMilli()))
 }
 
 func (this *SystemTimer) addTimerTaskEntry(entry *TimerTaskEntry) {
@@ -39,23 +39,32 @@ func (this *SystemTimer) addTimerTaskEntry(entry *TimerTaskEntry) {
 	}
 }
 
-func (t *SystemTimer) advanceClock(timeoutMs int64) bool {
-	bucket := t.delayQueue.Poll(time.Duration(timeoutMs) * time.Millisecond)
+func (this *SystemTimer) advanceClock(timeoutMs int64) bool {
+	if timeoutMs == 0 {
+		timeoutMs = this.timingWheel.tickMs
+	}
+	bucket := this.delayQueue.Poll(time.Duration(timeoutMs) * time.Millisecond)
 	if bucket != nil {
-		t.locker.Lock()
-		defer t.locker.Unlock()
+		this.locker.Lock()
+		defer this.locker.Unlock()
 		for bucket != nil {
-			t.timingWheel.advanceClock(bucket.list.getExpiration())
-			bucket.flush(t.addTimerTaskEntry)
-			bucket = t.delayQueue.PollE()
+			this.timingWheel.advanceClock(bucket.list.getExpiration())
+			bucket.flush(this.addTimerTaskEntry)
+			bucket = this.delayQueue.PollE()
 			return true
 		}
 	}
 	return false
 }
 
-func (t *SystemTimer) size() int64 {
-	return t.taskCounter.Load().(int64)
+func (this *SystemTimer) run() {
+	for {
+		this.advanceClock(0)
+	}
+}
+
+func (this *SystemTimer) size() int64 {
+	return this.taskCounter.Load().(int64)
 }
 
 func (this *SystemTimer) shutdown() {

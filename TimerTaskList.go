@@ -31,8 +31,12 @@ func NewTimerTaskList(taskCounter *int32) *TimerTaskList {
 }
 
 func (this *TimerTaskList) setExpiration(expirationMs int64) bool {
-	atomic.StoreInt64(&this.expiration, expirationMs)
-	return true
+	expire := atomic.LoadInt64(&this.expiration)
+	if expire != expirationMs {
+		atomic.StoreInt64(&this.expiration, expirationMs)
+		return true
+	}
+	return false
 }
 
 func (this *TimerTaskList) getExpiration() int64 {
