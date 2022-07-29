@@ -28,7 +28,9 @@ func TestTimer(t *testing.T) {
 			assert.Equal(t, idx, time.Now().Unix()-s.Unix())
 		})
 		timer.Add(task)
-		if rand.Intn(100) < 20 {
+		if idx*1000 == 0 {
+			count -= 1
+		} else if rand.Intn(100) < 20 {
 			count -= 1
 			task.cancel()
 			t.Log("idx: ", idx, "cancel")
