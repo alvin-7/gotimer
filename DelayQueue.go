@@ -46,31 +46,31 @@ func (delay *DelayQueue) Put(list *TimerTaskList) {
 	heap.Push(&delay.queue, list)
 }
 
-func (delay *DelayQueue) Poll(nanos time.Duration) (bucket *TimerTaskList) {
+func (delay *DelayQueue) poll(millis time.Duration) (bucket *TimerTaskList) {
 	delay.locker.Lock()
 	defer delay.locker.Unlock()
 	for {
 		bucket = delay.peek()
 		if bucket == nil {
-			if nanos <= 0 {
+			if millis <= 0 {
 				return nil
 			} else {
-				delay.timer = time.NewTimer(nanos)
+				delay.timer = time.NewTimer(millis)
 			}
 		} else {
 			bucketDelay := bucket.getDelay()
 			if bucketDelay <= 0 {
-				return delay.poll()
+				return delay.pop()
 			}
-			if nanos <= 0 {
+			if millis <= 0 {
 				return nil
 			}
 			bucket = nil
 			if delay.timer != nil {
 				delay.timer.Stop()
 			}
-			if nanos < bucketDelay {
-				delay.timer = time.NewTimer(nanos)
+			if millis < bucketDelay {
+				delay.timer = time.NewTimer(millis)
 			} else {
 				delay.timer = time.NewTimer(bucketDelay)
 			}
@@ -79,14 +79,14 @@ func (delay *DelayQueue) Poll(nanos time.Duration) (bucket *TimerTaskList) {
 	}
 }
 
-func (delay *DelayQueue) PollE() *TimerTaskList {
+func (delay *DelayQueue) pollE() *TimerTaskList {
 	delay.locker.Lock()
 	defer delay.locker.Unlock()
 	first := delay.peek()
-	if first == nil || first.getDelay().Nanoseconds() > 0 {
+	if first == nil || first.getDelay().Milliseconds() > 0 {
 		return nil
 	} else {
-		return delay.poll()
+		return delay.pop()
 	}
 }
 
@@ -98,6 +98,6 @@ func (delay *DelayQueue) peek() *TimerTaskList {
 	}
 }
 
-func (delay *DelayQueue) poll() *TimerTaskList {
+func (delay *DelayQueue) pop() *TimerTaskList {
 	return heap.Pop(&delay.queue).(*TimerTaskList)
 }

@@ -17,17 +17,26 @@ func TestMain(m *testing.M) {
 
 func TestTimer(t *testing.T) {
 	timer := NewSystemTimer(1000, 6)
-	for i := 0; i < 20; i++ {
+	cnt := 20
+	count := int32(cnt)
+	for i := 0; i < cnt; i++ {
 		idx := rand.Int63n(100)
 		s := time.Now()
 		t.Log("idx: ", idx)
-		timer.add(NewTimerTask(idx*1000, func() {
+		task := NewTimerTask(idx*1000, func() {
 			t.Log("idx: ", idx, "offset: ", time.Now().Unix()-s.Unix())
 			assert.Equal(t, idx, time.Now().Unix()-s.Unix())
-		}))
+		})
+		timer.Add(task)
+		if rand.Intn(100) < 20 {
+			count -= 1
+			task.cancel()
+			t.Log("idx: ", idx, "cancel")
+		}
 	}
-	go timer.run()
-	for timer.size() > 0 {
+	assert.Equal(t, count, timer.Size())
+	go timer.Run()
+	for timer.Size() > 0 {
 	}
-	timer.shutdown()
+	timer.Shutdown()
 }

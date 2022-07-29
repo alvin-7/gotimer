@@ -13,7 +13,7 @@ func TestDelayQueue(t *testing.T) {
 	taskCounter := int32(0)
 	itemL := rand.Intn(1000) + 500
 	for i := 0; i < itemL; i++ {
-		list := NewTimerTaskList(&taskCounter)
+		list := newTimerTaskList(&taskCounter)
 		exp := rand.Int63n(10000)
 		list.setExpiration(exp)
 		delay.Put(list)
@@ -27,7 +27,7 @@ func TestDelayQueue(t *testing.T) {
 
 	i := 0
 	for delay.Len() > 0 {
-		item := delay.PollE().getExpiration()
+		item := delay.pollE().getExpiration()
 		assert.Equal(t, queue[i].getExpiration(), item)
 		i += 1
 	}

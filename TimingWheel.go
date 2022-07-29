@@ -16,11 +16,11 @@ type TimingWheel struct {
 	locker        sync.Mutex
 }
 
-func NewTimingWheel(tickMs int64, wheelSize int64, startMs int64, taskCounter *int32, queue *DelayQueue) *TimingWheel {
+func newTimingWheel(tickMs int64, wheelSize int64, startMs int64, taskCounter *int32, queue *DelayQueue) *TimingWheel {
 	interval := tickMs * wheelSize
 	buckets := make([]*TimerTaskList, wheelSize)
 	for idx := range buckets {
-		buckets[idx] = NewTimerTaskList(taskCounter)
+		buckets[idx] = newTimerTaskList(taskCounter)
 	}
 	currentTime := startMs - (startMs % tickMs)
 	return &TimingWheel{
@@ -38,7 +38,7 @@ func (wheel *TimingWheel) addOverflowWheel() {
 	wheel.locker.Lock()
 	defer wheel.locker.Unlock()
 	if wheel.overflowWheel == nil {
-		wheel.overflowWheel = NewTimingWheel(wheel.interval, wheel.wheelSize, wheel.currentTime, wheel.taskCount, wheel.queue)
+		wheel.overflowWheel = newTimingWheel(wheel.interval, wheel.wheelSize, wheel.currentTime, wheel.taskCount, wheel.queue)
 	}
 }
 

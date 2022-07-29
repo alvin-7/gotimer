@@ -14,9 +14,9 @@ type TimerTaskList struct {
 	rLocker     sync.Mutex
 }
 
-func NewTimerTaskList(taskCounter *int32) *TimerTaskList {
+func newTimerTaskList(taskCounter *int32) *TimerTaskList {
 	lis := new(TimerTaskList)
-	root := NewTimerTaskEntry(nil, -1)
+	root := newTimerTaskEntry(nil, -1)
 	root.prev = root
 	root.next = root
 	root.list = lis

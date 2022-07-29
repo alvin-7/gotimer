@@ -11,7 +11,7 @@ type TimerTaskEntry struct {
 	expirationMs int64
 }
 
-func NewTimerTaskEntry(timeTask *TimerTask, expirationMs int64) *TimerTaskEntry {
+func newTimerTaskEntry(timeTask *TimerTask, expirationMs int64) *TimerTaskEntry {
 	entry := &TimerTaskEntry{
 		timerTask:    timeTask,
 		expirationMs: expirationMs,
@@ -26,9 +26,9 @@ func (entry *TimerTaskEntry) cancelled() bool {
 	return entry.timerTask.getTimerTaskEntry() != entry
 }
 
-func (entry *TimerTaskEntry) compare(that *TimerTaskEntry) bool {
-	return entry.expirationMs > that.expirationMs
-}
+// func (entry *TimerTaskEntry) compare(that *TimerTaskEntry) bool {
+// 	return entry.expirationMs > that.expirationMs
+// }
 
 func (entry *TimerTaskEntry) remove() {
 	currentList := entry.list

@@ -25,7 +25,7 @@ func NewSystemTimer(tickMs int64, wheelSize int64) *SystemTimer {
 	delay := &DelayQueue{}
 	counter := int32(0)
 	startMs := time.Now().UnixMilli()
-	timingWheel := NewTimingWheel(tickMs, wheelSize, startMs, &counter, delay)
+	timingWheel := newTimingWheel(tickMs, wheelSize, startMs, &counter, delay)
 	return &SystemTimer{
 		delayQueue:  delay,
 		taskCounter: &counter,
@@ -33,10 +33,10 @@ func NewSystemTimer(tickMs int64, wheelSize int64) *SystemTimer {
 	}
 }
 
-func (t *SystemTimer) add(timerTask *TimerTask) {
+func (t *SystemTimer) Add(timerTask *TimerTask) {
 	t.locker.RLock()
 	defer t.locker.RUnlock()
-	t.addTimerTaskEntry(NewTimerTaskEntry(timerTask, timerTask.delayMs+time.Now().UnixMilli()))
+	t.addTimerTaskEntry(newTimerTaskEntry(timerTask, timerTask.delayMs+time.Now().UnixMilli()))
 }
 
 func (t *SystemTimer) addTimerTaskEntry(entry *TimerTaskEntry) {
@@ -51,35 +51,35 @@ func (t *SystemTimer) addTimerTaskEntry(entry *TimerTaskEntry) {
 	}
 }
 
-func (t *SystemTimer) advanceClock(timeoutMs int64) bool {
+func (t *SystemTimer) AdvanceClock(timeoutMs int64) bool {
 	if timeoutMs == 0 {
 		timeoutMs = t.timingWheel.tickMs
 	}
 	var bucket *TimerTaskList
-	bucket = t.delayQueue.Poll(time.Duration(timeoutMs) * time.Millisecond)
+	bucket = t.delayQueue.poll(time.Duration(timeoutMs) * time.Millisecond)
 	if bucket != nil {
 		t.locker.Lock()
 		defer t.locker.Unlock()
 		for bucket != nil {
 			t.timingWheel.advanceClock(bucket.getExpiration())
 			bucket.flush(t.addTimerTaskEntry)
-			bucket = t.delayQueue.PollE()
+			bucket = t.delayQueue.pollE()
 		}
 		return true
 	}
 	return false
 }
 
-func (t *SystemTimer) run() {
+func (t *SystemTimer) Run() {
 	for {
-		t.advanceClock(0)
+		t.AdvanceClock(0)
 	}
 }
 
-func (t *SystemTimer) size() int32 {
+func (t *SystemTimer) Size() int32 {
 	return atomic.LoadInt32(t.taskCounter)
 }
 
-func (t *SystemTimer) shutdown() {
+func (t *SystemTimer) Shutdown() {
 	t.group.Wait()
 }
