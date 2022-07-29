@@ -27,7 +27,10 @@ func TestDelayQueue(t *testing.T) {
 
 	i := 0
 	for delay.Len() > 0 {
-		item := delay.pollE().getExpiration()
+		peekl := delay.peek()
+		polll := delay.pollE()
+		assert.Equal(t, peekl, polll)
+		item := polll.getExpiration()
 		assert.Equal(t, queue[i].getExpiration(), item)
 		i += 1
 	}
