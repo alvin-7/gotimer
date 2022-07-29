@@ -11,6 +11,7 @@ type TimerTaskList struct {
 	expiration  *int64
 	taskCounter *int32
 	locker      sync.Mutex
+	rLocker     sync.Mutex
 }
 
 func NewTimerTaskList(taskCounter *int32) *TimerTaskList {
@@ -27,19 +28,19 @@ func NewTimerTaskList(taskCounter *int32) *TimerTaskList {
 	return lis
 }
 
-func (this *TimerTaskList) setExpiration(expirationMs int64) bool {
-	return atomic.SwapInt64(this.expiration, expirationMs) != expirationMs
+func (l *TimerTaskList) setExpiration(expirationMs int64) bool {
+	return atomic.SwapInt64(l.expiration, expirationMs) != expirationMs
 }
 
-func (this *TimerTaskList) getExpiration() int64 {
-	return atomic.LoadInt64(this.expiration)
+func (l *TimerTaskList) getExpiration() int64 {
+	return *l.expiration
 }
 
-func (this *TimerTaskList) foreach(f func(*TimerTask)) {
-	this.locker.Lock()
-	defer this.locker.Unlock()
-	entry := this.root.next
-	for entry != this.root {
+func (l *TimerTaskList) foreach(f func(*TimerTask)) {
+	l.locker.Lock()
+	defer l.locker.Unlock()
+	entry := l.root.next
+	for entry != l.root {
 		nextEntry := entry.next
 		if !entry.cancelled() {
 			f(entry.timerTask)
@@ -48,64 +49,64 @@ func (this *TimerTaskList) foreach(f func(*TimerTask)) {
 	}
 }
 
-func (this *TimerTaskList) add(entry *TimerTaskEntry) {
+func (l *TimerTaskList) add(entry *TimerTaskEntry) {
 	var done = false
 	for !done {
 		entry.remove()
-		this.locker.Lock()
-		defer this.locker.Unlock()
+		l.locker.Lock()
+		defer l.locker.Unlock()
 		{
 			entry.locker.Lock()
 			defer entry.locker.Unlock()
 			if entry.list == nil {
-				tail := this.root.prev
-				entry.next = this.root
+				tail := l.root.prev
+				entry.next = l.root
 				entry.prev = tail
-				entry.list = this
+				entry.list = l
 				tail.next = entry
-				this.root.prev = entry
-				atomic.AddInt32(this.taskCounter, 1)
+				l.root.prev = entry
+				atomic.AddInt32(l.taskCounter, 1)
 				done = true
 			}
 		}
 	}
 }
 
-func (this *TimerTaskList) remove(entry *TimerTaskEntry) {
-	this.locker.Lock()
-	defer this.locker.Unlock()
+func (l *TimerTaskList) remove(entry *TimerTaskEntry) {
+	l.rLocker.Lock()
+	defer l.rLocker.Unlock()
 
-	if entry.list == this {
+	if entry.list == l {
 		entry.next.prev = entry.prev
 		entry.prev.next = entry.next
 		entry.next = nil
 		entry.prev = nil
 		entry.list = nil
-		atomic.AddInt32(this.taskCounter, -1)
+		atomic.AddInt32(l.taskCounter, -1)
 	}
 }
 
-func (this *TimerTaskList) flush(f func(*TimerTaskEntry)) {
-	this.locker.Lock()
-	defer this.locker.Unlock()
-	head := this.root.next
-	for head != this.root {
-		this.remove(head)
+func (l *TimerTaskList) flush(f func(*TimerTaskEntry)) {
+	l.locker.Lock()
+	defer l.locker.Unlock()
+	head := l.root.next
+	for head != l.root {
+		l.remove(head)
 		f(head)
-		head = this.root.next
+		head = l.root.next
 	}
-	atomic.StoreInt64(this.expiration, -1)
+	atomic.StoreInt64(l.expiration, -1)
 }
 
-func (this *TimerTaskList) getDelay() time.Duration {
-	delay := this.getExpiration() - time.Now().UnixMilli()
+func (l *TimerTaskList) getDelay() time.Duration {
+	delay := l.getExpiration() - time.Now().UnixMilli()
 	if delay > 0 {
-		return time.Duration(delay)
+		return time.Duration(delay) * time.Millisecond
 	} else {
-		return time.Duration(0)
+		return 0
 	}
 }
 
-func (this *TimerTaskList) compareTo(l *TimerTaskList) bool {
-	return this.getExpiration() < l.getExpiration()
+func (l *TimerTaskList) compareTo(list *TimerTaskList) bool {
+	return l.getExpiration() < list.getExpiration()
 }

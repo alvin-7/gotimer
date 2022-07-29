@@ -58,19 +58,21 @@ func (delay *DelayQueue) Poll(nanos time.Duration) (bucket *TimerTaskList) {
 				delay.timer = time.NewTimer(nanos)
 			}
 		} else {
-			d := bucket.getDelay()
-			if d <= 0 {
+			bucketDelay := bucket.getDelay()
+			if bucketDelay <= 0 {
 				return delay.poll()
 			}
 			if nanos <= 0 {
 				return nil
 			}
 			bucket = nil
-			if nanos < d || delay.timer != nil {
+			if delay.timer != nil {
 				delay.timer.Stop()
+			}
+			if nanos < bucketDelay {
 				delay.timer = time.NewTimer(nanos)
 			} else {
-				delay.timer = time.NewTimer(d)
+				delay.timer = time.NewTimer(bucketDelay)
 			}
 		}
 		<-delay.timer.C
@@ -89,7 +91,11 @@ func (delay *DelayQueue) PollE() *TimerTaskList {
 }
 
 func (delay *DelayQueue) peek() *TimerTaskList {
-	return delay.queue[0]
+	if delay.queue.Len() > 0 {
+		return delay.queue[0]
+	} else {
+		return nil
+	}
 }
 
 func (delay *DelayQueue) poll() *TimerTaskList {
