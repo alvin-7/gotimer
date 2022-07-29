@@ -17,8 +17,8 @@ type SystemTimer struct {
 	delayQueue  *DelayQueue
 	taskCounter atomic.Value
 	timingWheel *TimingWheel
-	locker      *sync.RWMutex
-	group       *sync.WaitGroup
+	locker      sync.RWMutex
+	group       sync.WaitGroup
 }
 
 func (this *SystemTimer) add(timerTask *TimerTask) {
@@ -34,7 +34,7 @@ func (this *SystemTimer) addTimerTaskEntry(entry *TimerTaskEntry) {
 			go func(ctx *sync.WaitGroup) {
 				defer ctx.Done()
 				entry.timerTask.f()
-			}(this.group)
+			}(&this.group)
 		}
 	}
 }

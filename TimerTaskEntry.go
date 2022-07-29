@@ -7,7 +7,7 @@ type TimerTaskEntry struct {
 	prev         *TimerTaskEntry
 	next         *TimerTaskEntry
 	timerTask    *TimerTask
-	locker       *sync.Mutex
+	locker       sync.Mutex
 	expirationMs int64
 }
 

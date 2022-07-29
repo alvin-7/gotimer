@@ -13,7 +13,7 @@ type TimingWheel struct {
 	currentTime   int64
 	queue         DelayQueueUnit
 	overflowWheel *TimingWheel
-	locker        *sync.Mutex
+	locker        sync.Mutex
 }
 
 func NewTimingWheel(tickMs int64, wheelSize int64, startMs int64, taskCounter *int32, queue DelayQueueUnit) *TimingWheel {

@@ -21,26 +21,29 @@ func (pq DelayQueueUnit) Swap(i, j int) {
 }
 
 func (pq *DelayQueueUnit) Push(x interface{}) {
-	item := x.(*TimerTaskList)
-	*pq = append(*pq, item)
+	*pq = append(*pq, x.(*TimerTaskList))
 }
 
 func (pq *DelayQueueUnit) Pop() interface{} {
 	old := *pq
-	n := len(old) - 1
-	itm := old[0]
-	*pq = old[1:n]
+	n := len(old)
+	itm := old[n-1]
+	*pq = old[:n-1]
 	return itm
 }
 
 type DelayQueue struct {
-	DelayQueueUnit
+	queue  DelayQueueUnit
 	timer  *time.Timer
-	locker *sync.Mutex
+	locker sync.Mutex
 }
 
-func (delay *DelayQueue) Put(entry *TimerTaskList) {
-	heap.Push(delay, entry)
+func (delay *DelayQueue) Len() int {
+	return delay.queue.Len()
+}
+
+func (delay *DelayQueue) Put(list *TimerTaskList) {
+	heap.Push(&delay.queue, list)
 }
 
 func (delay *DelayQueue) Poll(nanos time.Duration) (bucket *TimerTaskList) {
@@ -86,9 +89,9 @@ func (delay *DelayQueue) PollE() *TimerTaskList {
 }
 
 func (delay *DelayQueue) peek() *TimerTaskList {
-	return delay.DelayQueueUnit[0]
+	return delay.queue[0]
 }
 
 func (delay *DelayQueue) poll() *TimerTaskList {
-	return heap.Pop(delay).(*TimerTaskList)
+	return heap.Pop(&delay.queue).(*TimerTaskList)
 }

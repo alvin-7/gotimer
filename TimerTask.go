@@ -5,7 +5,7 @@ import "sync"
 type TimerTask struct {
 	delayMs        int64
 	timerTaskEntry *TimerTaskEntry
-	locker         *sync.Mutex
+	locker         sync.Mutex
 	f              func()
 }
 
@@ -13,7 +13,6 @@ func NewTimerTask(delayMs int64, f func()) *TimerTask {
 	return &TimerTask{
 		delayMs: delayMs,
 		f:       f,
-		locker:  &sync.Mutex{},
 	}
 }
 

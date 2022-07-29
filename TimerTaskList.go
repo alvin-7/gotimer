@@ -13,7 +13,7 @@ type TimerTaskList struct {
 	prev        *TimerTaskEntry
 	expiration  int64
 	taskCounter *int32
-	locker      *sync.Mutex
+	locker      sync.Mutex
 }
 
 func NewTimerTaskList(taskCounter *int32) *TimerTaskList {
