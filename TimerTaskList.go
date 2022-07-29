@@ -8,34 +8,31 @@ import (
 
 type TimerTaskList struct {
 	root        *TimerTaskEntry
-	list        *TimerTaskList
-	next        *TimerTaskEntry
-	prev        *TimerTaskEntry
-	expiration  int64
+	expiration  *int64
 	taskCounter *int32
 	locker      sync.Mutex
 }
 
 func NewTimerTaskList(taskCounter *int32) *TimerTaskList {
+	lis := new(TimerTaskList)
 	root := NewTimerTaskEntry(nil, -1)
 	root.prev = root
 	root.next = root
+	root.list = lis
 	expiration := int64(-1)
-	return &TimerTaskList{
-		root:        root,
-		list:        nil,
-		prev:        nil,
-		expiration:  expiration,
-		taskCounter: taskCounter,
-	}
+
+	lis.root = root
+	lis.expiration = &expiration
+	lis.taskCounter = taskCounter
+	return lis
 }
 
 func (this *TimerTaskList) setExpiration(expirationMs int64) bool {
-	return atomic.SwapInt64(&this.expiration, expirationMs) != expirationMs
+	return atomic.SwapInt64(this.expiration, expirationMs) != expirationMs
 }
 
 func (this *TimerTaskList) getExpiration() int64 {
-	return atomic.LoadInt64(&this.expiration)
+	return atomic.LoadInt64(this.expiration)
 }
 
 func (this *TimerTaskList) foreach(f func(*TimerTask)) {
@@ -97,7 +94,7 @@ func (this *TimerTaskList) flush(f func(*TimerTaskEntry)) {
 		f(head)
 		head = this.root.next
 	}
-	atomic.StoreInt64(&this.expiration, -1)
+	atomic.StoreInt64(this.expiration, -1)
 }
 
 func (this *TimerTaskList) getDelay() time.Duration {

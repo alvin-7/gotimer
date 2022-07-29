@@ -11,12 +11,12 @@ type TimingWheel struct {
 	buckets       []*TimerTaskList
 	tickMs        int64
 	currentTime   int64
-	queue         DelayQueueUnit
+	queue         *DelayQueue
 	overflowWheel *TimingWheel
 	locker        sync.Mutex
 }
 
-func NewTimingWheel(tickMs int64, wheelSize int64, startMs int64, taskCounter *int32, queue DelayQueueUnit) *TimingWheel {
+func NewTimingWheel(tickMs int64, wheelSize int64, startMs int64, taskCounter *int32, queue *DelayQueue) *TimingWheel {
 	interval := tickMs * wheelSize
 	buckets := make([]*TimerTaskList, wheelSize)
 	for idx := range buckets {
@@ -54,7 +54,7 @@ func (wheel *TimingWheel) add(entry *TimerTaskEntry) bool {
 		bucket.add(entry)
 
 		if bucket.setExpiration(virtualId * wheel.tickMs) {
-			wheel.queue.Push(bucket)
+			wheel.queue.Put(bucket)
 		}
 		return true
 	} else { // in overflow wheel
