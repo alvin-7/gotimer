@@ -70,10 +70,11 @@ func (t *SystemTimer) AdvanceClock(timeoutMs int64) bool {
 	return false
 }
 
-func (t *SystemTimer) Run() {
-	for {
+func (t *SystemTimer) RunAndShutDown() {
+	for t.Size() > 0 {
 		t.AdvanceClock(0)
 	}
+	t.Shutdown()
 }
 
 func (t *SystemTimer) Size() int32 {

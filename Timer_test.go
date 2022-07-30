@@ -37,8 +37,5 @@ func TestTimer(t *testing.T) {
 		}
 	}
 	assert.Equal(t, count, timer.Size())
-	go timer.Run()
-	for timer.Size() > 0 {
-	}
-	timer.Shutdown()
+	timer.RunAndShutDown()
 }
