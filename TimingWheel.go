@@ -13,7 +13,7 @@ type TimingWheel struct {
 	currentTime   int64
 	queue         *DelayQueue
 	overflowWheel *TimingWheel
-	locker        sync.Mutex
+	mux           sync.Mutex
 }
 
 func newTimingWheel(tickMs int64, wheelSize int64, startMs int64, taskCounter *int32, queue *DelayQueue) *TimingWheel {
@@ -35,8 +35,8 @@ func newTimingWheel(tickMs int64, wheelSize int64, startMs int64, taskCounter *i
 }
 
 func (wheel *TimingWheel) addOverflowWheel() {
-	wheel.locker.Lock()
-	defer wheel.locker.Unlock()
+	wheel.mux.Lock()
+	defer wheel.mux.Unlock()
 	if wheel.overflowWheel == nil {
 		wheel.overflowWheel = newTimingWheel(wheel.interval, wheel.wheelSize, wheel.currentTime, wheel.taskCount, wheel.queue)
 	}

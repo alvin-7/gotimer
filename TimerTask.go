@@ -5,7 +5,7 @@ import "sync"
 type TimerTask struct {
 	delayMs        int64
 	timerTaskEntry *TimerTaskEntry
-	locker         sync.Mutex
+	mux            sync.Mutex
 	f              func()
 }
 
@@ -17,8 +17,8 @@ func NewTimerTask(delayMs int64, f func()) *TimerTask {
 }
 
 func (task *TimerTask) cancel() {
-	task.locker.Lock()
-	defer task.locker.Unlock()
+	task.mux.Lock()
+	defer task.mux.Unlock()
 	if task.timerTaskEntry != nil {
 		task.timerTaskEntry.remove()
 	}
@@ -26,8 +26,8 @@ func (task *TimerTask) cancel() {
 }
 
 func (task *TimerTask) setTimerTaskEntry(entry *TimerTaskEntry) {
-	task.locker.Lock()
-	defer task.locker.Unlock()
+	task.mux.Lock()
+	defer task.mux.Unlock()
 	if task.timerTaskEntry != nil && task.timerTaskEntry != entry {
 		task.timerTaskEntry.remove()
 	}

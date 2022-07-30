@@ -33,9 +33,9 @@ func (pq *DelayQueueUnit) Pop() interface{} {
 }
 
 type DelayQueue struct {
-	queue  DelayQueueUnit
-	timer  *time.Timer
-	locker sync.Mutex
+	queue DelayQueueUnit
+	timer *time.Timer
+	mux   sync.Mutex
 }
 
 func (delay *DelayQueue) Len() int {
@@ -47,8 +47,8 @@ func (delay *DelayQueue) Put(list *TimerTaskList) {
 }
 
 func (delay *DelayQueue) poll(millis time.Duration) (bucket *TimerTaskList) {
-	delay.locker.Lock()
-	defer delay.locker.Unlock()
+	delay.mux.Lock()
+	defer delay.mux.Unlock()
 	for {
 		bucket = delay.peek()
 		if bucket == nil {
@@ -80,8 +80,8 @@ func (delay *DelayQueue) poll(millis time.Duration) (bucket *TimerTaskList) {
 }
 
 func (delay *DelayQueue) pollE() *TimerTaskList {
-	delay.locker.Lock()
-	defer delay.locker.Unlock()
+	delay.mux.Lock()
+	defer delay.mux.Unlock()
 	first := delay.peek()
 	if first == nil || first.getDelay().Milliseconds() > 0 {
 		return nil

@@ -17,7 +17,7 @@ type SystemTimer struct {
 	delayQueue  *DelayQueue
 	taskCounter *int32
 	timingWheel *TimingWheel
-	locker      sync.RWMutex
+	mux         sync.RWMutex
 	group       sync.WaitGroup
 }
 
@@ -34,8 +34,8 @@ func NewSystemTimer(tickMs int64, wheelSize int64) *SystemTimer {
 }
 
 func (t *SystemTimer) Add(timerTask *TimerTask) {
-	t.locker.RLock()
-	defer t.locker.RUnlock()
+	t.mux.RLock()
+	defer t.mux.RUnlock()
 	t.addTimerTaskEntry(newTimerTaskEntry(timerTask, timerTask.delayMs+time.Now().UnixMilli()))
 }
 
@@ -58,8 +58,8 @@ func (t *SystemTimer) AdvanceClock(timeoutMs int64) bool {
 	var bucket *TimerTaskList
 	bucket = t.delayQueue.poll(time.Duration(timeoutMs) * time.Millisecond)
 	if bucket != nil {
-		t.locker.Lock()
-		defer t.locker.Unlock()
+		t.mux.Lock()
+		defer t.mux.Unlock()
 		for bucket != nil {
 			t.timingWheel.advanceClock(bucket.getExpiration())
 			bucket.flush(t.addTimerTaskEntry)

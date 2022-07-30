@@ -10,8 +10,8 @@ type TimerTaskList struct {
 	root        *TimerTaskEntry
 	expiration  *int64
 	taskCounter *int32
-	locker      sync.Mutex
-	rLocker     sync.Mutex
+	mux         sync.Mutex
+	flushMux    sync.Mutex
 }
 
 func newTimerTaskList(taskCounter *int32) *TimerTaskList {
@@ -37,8 +37,8 @@ func (l *TimerTaskList) getExpiration() int64 {
 }
 
 func (l *TimerTaskList) foreach(f func(*TimerTask)) {
-	l.locker.Lock()
-	defer l.locker.Unlock()
+	l.mux.Lock()
+	defer l.mux.Unlock()
 	entry := l.root.next
 	for entry != l.root {
 		nextEntry := entry.next
@@ -53,11 +53,11 @@ func (l *TimerTaskList) add(entry *TimerTaskEntry) {
 	var done = false
 	for !done {
 		entry.remove()
-		l.locker.Lock()
-		defer l.locker.Unlock()
+		l.mux.Lock()
+		defer l.mux.Unlock()
 		{
-			entry.locker.Lock()
-			defer entry.locker.Unlock()
+			entry.mux.Lock()
+			defer entry.mux.Unlock()
 			if entry.list == nil {
 				tail := l.root.prev
 				entry.next = l.root
@@ -73,8 +73,8 @@ func (l *TimerTaskList) add(entry *TimerTaskEntry) {
 }
 
 func (l *TimerTaskList) remove(entry *TimerTaskEntry) {
-	l.rLocker.Lock()
-	defer l.rLocker.Unlock()
+	l.mux.Lock()
+	defer l.mux.Unlock()
 
 	if entry.list == l {
 		entry.next.prev = entry.prev
@@ -87,8 +87,8 @@ func (l *TimerTaskList) remove(entry *TimerTaskEntry) {
 }
 
 func (l *TimerTaskList) flush(f func(*TimerTaskEntry)) {
-	l.locker.Lock()
-	defer l.locker.Unlock()
+	l.flushMux.Lock()
+	defer l.flushMux.Unlock()
 	head := l.root.next
 	for head != l.root {
 		l.remove(head)
