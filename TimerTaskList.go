@@ -99,9 +99,9 @@ func (l *TimerTaskList) flush(f func(*TimerTaskEntry)) {
 }
 
 func (l *TimerTaskList) getDelay() time.Duration {
-	delay := l.getExpiration() - time.Now().UnixMilli()
+	delay := time.Duration(l.getExpiration())*time.Millisecond - time.Duration(time.Now().UnixNano())
 	if delay > 0 {
-		return time.Duration(delay) * time.Millisecond
+		return delay
 	} else {
 		return 0
 	}
